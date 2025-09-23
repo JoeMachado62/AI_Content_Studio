@@ -1,0 +1,98 @@
+[0;32m[2025-09-22 23:07:10] [INFO][0m Starting AI Content Studio in production mode...
+[0;32m[2025-09-22 23:07:10] [INFO][0m Installing dependencies and building application...
+
+> gitroom@1.0.0 build /root/AI_Content_Studio
+> pnpm -r --workspace-concurrency=1 --filter ./apps/frontend --filter ./apps/backend --filter ./apps/workers  --filter ./apps/cron run build
+
+Scope: 4 of 8 workspace projects
+
+> postiz-frontend@1.0.0 build /root/AI_Content_Studio/apps/frontend
+> next build
+
+  ▲ Next.js 14.2.32
+  - Experiments (use with caution):
+    · proxyTimeout
+    · instrumentationHook
+
+   Creating an optimized production build ...
+[0;32m[2025-09-23 00:44:56] [INFO][0m Starting AI Content Studio in production mode...
+[0;32m[2025-09-23 00:44:56] [INFO][0m Installing dependencies and building application...
+[0;32m[2025-09-23 00:50:17] [INFO][0m Stopping all services...
+[0;32m[2025-09-23 00:50:17] [INFO][0m All services stopped
+
+> gitroom@1.0.0 build /root/AI_Content_Studio
+> pnpm -r --workspace-concurrency=1 --filter ./apps/frontend --filter ./apps/backend --filter ./apps/workers  --filter ./apps/cron run build
+
+Scope: 4 of 8 workspace projects
+
+> postiz-frontend@1.0.0 build /root/AI_Content_Studio/apps/frontend
+> next build
+
+  ▲ Next.js 14.2.32
+  - Experiments (use with caution):
+    · proxyTimeout
+    · instrumentationHook
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+PageNotFoundError: Cannot find module for page: /_not-found
+    at getPagePath (/root/AI_Content_Studio/node_modules/next/dist/server/require.js:94:15)
+    at requirePage (/root/AI_Content_Studio/node_modules/next/dist/server/require.js:99:22)
+    at /root/AI_Content_Studio/node_modules/next/dist/server/load-components.js:103:84
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async loadComponentsImpl (/root/AI_Content_Studio/node_modules/next/dist/server/load-components.js:103:26)
+    at async /root/AI_Content_Studio/node_modules/next/dist/build/utils.js:1116:32
+    at async Span.traceAsyncFn (/root/AI_Content_Studio/node_modules/next/dist/trace/trace.js:154:20) {
+  code: 'ENOENT'
+}
+PageNotFoundError: Cannot find module for page: /p/[id]
+    at getPagePath (/root/AI_Content_Studio/node_modules/next/dist/server/require.js:94:15)
+    at requirePage (/root/AI_Content_Studio/node_modules/next/dist/server/require.js:99:22)
+    at /root/AI_Content_Studio/node_modules/next/dist/server/load-components.js:103:84
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async loadComponentsImpl (/root/AI_Content_Studio/node_modules/next/dist/server/load-components.js:103:26)
+    at async /root/AI_Content_Studio/node_modules/next/dist/build/utils.js:1116:32
+    at async Span.traceAsyncFn (/root/AI_Content_Studio/node_modules/next/dist/trace/trace.js:154:20) {
+  code: 'ENOENT'
+}
+
+> Build error occurred
+Error: Failed to collect page data for /_not-found
+    at /root/AI_Content_Studio/node_modules/next/dist/build/utils.js:1269:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  type: 'Error'
+}
+/root/AI_Content_Studio/apps/frontend:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  postiz-frontend@1.0.0 build: `next build`
+Exit status 1
+ WARN   Local package.json exists, but node_modules missing, did you mean to install?
+
+> postiz-backend@1.0.0 build /root/AI_Content_Studio/apps/backend
+> cross-env NODE_ENV=production nest build
+
+ ELIFECYCLE  Command failed with exit code 1.
+
+<--- Last few GCs --->
+
+[79805:0x27999fa0]    83081 ms: Mark-Compact (reduce) 2045.8 (2084.5) -> 2044.7 (2084.3) MB, 2044.84 / 0.00 ms  (average mu = 0.101, current mu = 0.031) allocation failure; scavenge might not succeed
+
+
+<--- JS stacktrace --->
+
+FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory
+----- Native stack trace -----
+
+ 1: 0xb76dc5 node::OOMErrorHandler(char const*, v8::OOMDetails const&) [node]
+ 2: 0xee6020 v8::Utils::ReportOOMFailure(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [node]
+ 3: 0xee6307 v8::internal::V8::FatalProcessOutOfMemory(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [node]
+ 4: 0x10f7f55  [node]
+ 5: 0x10f84e4 v8::internal::Heap::RecomputeLimits(v8::internal::GarbageCollector) [node]
+ 6: 0x110f3d4 v8::internal::Heap::PerformGarbageCollection(v8::internal::GarbageCollector, v8::internal::GarbageCollectionReason, char const*) [node]
+ 7: 0x110fbec v8::internal::Heap::CollectGarbage(v8::internal::AllocationSpace, v8::internal::GarbageCollectionReason, v8::GCCallbackFlags) [node]
+ 8: 0x10e5ef1 v8::internal::HeapAllocator::AllocateRawWithLightRetrySlowPath(int, v8::internal::AllocationType, v8::internal::AllocationOrigin, v8::internal::AllocationAlignment) [node]
+ 9: 0x10e7085 v8::internal::HeapAllocator::AllocateRawWithRetryOrFailSlowPath(int, v8::internal::AllocationType, v8::internal::AllocationOrigin, v8::internal::AllocationAlignment) [node]
+10: 0x10c46d6 v8::internal::Factory::NewFillerObject(int, v8::internal::AllocationAlignment, v8::internal::AllocationType, v8::internal::AllocationOrigin) [node]
+11: 0x1520216 v8::internal::Runtime_AllocateInYoungGeneration(int, unsigned long*, v8::internal::Isolate*) [node]
+12: 0x1959ef6  [node]

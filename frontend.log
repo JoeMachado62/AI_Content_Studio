@@ -1,0 +1,21 @@
+ WARN  Unsupported engine: wanted: {"node":">=20.0.0 <21.0.0"} (current: {"node":"v18.20.8","pnpm":"10.6.1"})
+
+> gitroom@1.0.0 dev:frontend /root/ai_content_studio/AI_Content_Studio
+> rm -rf apps/frontend/dist && pnpm --filter ./apps/frontend run dev
+
+.                                        |  WARN  Unsupported engine: wanted: {"node":">=20.0.0 <21.0.0"} (current: {"node":"v18.20.8","pnpm":"10.6.1"})
+
+> postiz-frontend@1.0.0 dev /root/ai_content_studio/AI_Content_Studio/apps/frontend
+> dotenv -e ../../.env -- next dev -p 4200
+
+  ▲ Next.js 14.2.32
+  - Local:        http://localhost:4200
+  - Experiments (use with caution):
+    · proxyTimeout
+    · instrumentationHook
+
+ ✓ Starting...
+ ○ Compiling /instrumentation ...
+ ✓ Compiled /instrumentation in 4.9s (1068 modules)
+ ✓ Ready in 12.5s
+[?25h

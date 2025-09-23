@@ -156,6 +156,11 @@ start_node_service() {
 
     cd "$SCRIPT_DIR"
 
+    # Use production environment
+    set -a
+    source .env.prod.active
+    set +a
+
     # Start the service in background
     nohup bash -c "$command" > "$log_file" 2>&1 &
     local pid=$!
@@ -264,6 +269,11 @@ stop_all_services() {
         rm -f "$POSTGRES_PID"
     fi
 
+    # Clean up production environment file
+    if [[ -f "$SCRIPT_DIR/.env.prod.active" ]]; then
+        rm -f "$SCRIPT_DIR/.env.prod.active"
+    fi
+
     log "INFO" "All services stopped"
 }
 
@@ -319,18 +329,42 @@ case "${1:-start}" in
             exit 1
         fi
 
-        # Ensure dependencies are installed and built
-        log "INFO" "Installing dependencies and building application..."
+        # Setup production environment
+        log "INFO" "Setting up production environment..."
         cd "$SCRIPT_DIR"
-        pnpm install >/dev/null 2>&1
-        pnpm run build >> "$MAIN_LOG" 2>&1
+
+        # Use production environment if it exists
+        if [[ -f ".env.production" ]]; then
+            log "INFO" "Using production environment configuration"
+            cp .env.production .env.prod.active
+        else
+            log "WARN" "No .env.production found, using existing .env"
+            cp .env .env.prod.active
+        fi
+
+        # Ensure dependencies are installed and built
+        log "INFO" "Installing dependencies (this may take 30-60 seconds)..."
+        pnpm install --reporter=silent
+
+        log "INFO" "Building application..."
+        pnpm run build >> "$MAIN_LOG" 2>&1 || {
+            log "ERROR" "Build failed. Check $MAIN_LOG for details."
+            exit 1
+        }
 
         # Start services in order
         start_docker_services || exit 1
 
         # Apply database migrations
         log "INFO" "Applying database migrations..."
-        pnpm run prisma-db-push >> "$MAIN_LOG" 2>&1
+        set -a
+        source .env.prod.active
+        set +a
+        pnpm run prisma-db-push --accept-data-loss >> "$MAIN_LOG" 2>&1 || {
+            log "ERROR" "Database migration failed. Check your database connection and $MAIN_LOG for details."
+            stop_all_services
+            exit 1
+        }
 
         # Start Node.js services
         start_node_service "Backend" "$BACKEND_PID" "$BACKEND_LOG" "NODE_OPTIONS='--max-old-space-size=4096' pnpm run start:prod:backend" || exit 1

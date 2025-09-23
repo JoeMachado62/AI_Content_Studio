@@ -1,0 +1,131 @@
+version: '3.8'
+
+services:
+  postiz-postgres:
+    image: postgres:17-alpine
+    container_name: postiz-postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: postiz-production-pwd
+      POSTGRES_USER: postiz-user
+      POSTGRES_DB: postiz-db
+    volumes:
+      - postgres-volume:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - postiz-network
+
+  postiz-redis:
+    image: redis:7-alpine
+    container_name: postiz-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - postiz-network
+
+  postiz-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: backend
+    container_name: postiz-backend
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://postiz-user:postiz-production-pwd@postiz-postgres:5432/postiz-db
+      - REDIS_URL=redis://postiz-redis:6379
+      - JWT_SECRET=ai-content-studio-jwt-secret-key-for-app-contentgenerator-me-subdomain-2024
+      - FRONTEND_URL=https://app.contentgenerator.me
+      - NEXT_PUBLIC_BACKEND_URL=https://app.contentgenerator.me
+      - BACKEND_INTERNAL_URL=http://postiz-backend:3000
+      - STORAGE_PROVIDER=local
+      - IS_GENERAL=true
+      - API_LIMIT=30
+      - NOT_SECURED=false
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postiz-postgres
+      - postiz-redis
+    networks:
+      - postiz-network
+
+  postiz-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: frontend
+    container_name: postiz-frontend
+    restart: always
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=https://app.contentgenerator.me
+      - FRONTEND_URL=https://app.contentgenerator.me
+    ports:
+      - "4200:4200"
+    depends_on:
+      - postiz-backend
+    networks:
+      - postiz-network
+
+  postiz-workers:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: workers
+    container_name: postiz-workers
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://postiz-user:postiz-production-pwd@postiz-postgres:5432/postiz-db
+      - REDIS_URL=redis://postiz-redis:6379
+      - JWT_SECRET=ai-content-studio-jwt-secret-key-for-app-contentgenerator-me-subdomain-2024
+      - STORAGE_PROVIDER=local
+      - IS_GENERAL=true
+    depends_on:
+      - postiz-postgres
+      - postiz-redis
+    networks:
+      - postiz-network
+
+  postiz-cron:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: cron
+    container_name: postiz-cron
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://postiz-user:postiz-production-pwd@postiz-postgres:5432/postiz-db
+      - REDIS_URL=redis://postiz-redis:6379
+      - JWT_SECRET=ai-content-studio-jwt-secret-key-for-app-contentgenerator-me-subdomain-2024
+      - STORAGE_PROVIDER=local
+      - IS_GENERAL=true
+    depends_on:
+      - postiz-postgres
+      - postiz-redis
+    networks:
+      - postiz-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: postiz-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/ssl/certs:ro
+    depends_on:
+      - postiz-frontend
+      - postiz-backend
+    networks:
+      - postiz-network
+
+volumes:
+  postgres-volume:
+    external: false
+
+networks:
+  postiz-network:
+    external: false

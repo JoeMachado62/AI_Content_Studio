@@ -1,9 +1,10 @@
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
 import { google } from 'googleapis';
-import { OAuth2Client } from 'google-auth-library/build/src/auth/oauth2client';
-import { ProvidersInterface } from '@gitroom/backend/services/auth/providers.interface';
 
-const clientAndGoogle = () => {
+import { ProvidersInterface } from '@gitroom/backend/services/auth/providers.interface';
+import { OAuth2Client } from 'google-auth-library/build/src/auth/oauth2client';
+
+const clientAndYoutube = () => {
   const client = new google.auth.OAuth2({
     clientId: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
@@ -22,7 +23,7 @@ const clientAndGoogle = () => {
 export class GoogleProvider implements ProvidersInterface {
   generateLink() {
     const state = makeId(7);
-    const { client } = clientAndGoogle();
+    const { client } = clientAndYoutube();
     return client.generateAuthUrl({
       access_type: 'online',
       prompt: 'consent',
@@ -35,20 +36,20 @@ export class GoogleProvider implements ProvidersInterface {
   }
 
   async getToken(code: string) {
-    const { client } = clientAndGoogle();
+    const { client } = clientAndYoutube();
     const { tokens } = await client.getToken(code);
-    return tokens.access_token!;
+    return tokens.access_token;
   }
 
   async getUser(providerToken: string) {
-    const { client, oauth2 } = clientAndGoogle();
+    const { client, oauth2 } = clientAndYoutube();
     client.setCredentials({ access_token: providerToken });
     const user = oauth2(client);
     const { data } = await user.userinfo.get();
 
     return {
       id: data.id!,
-      email: data.email!,
+      email: data.email,
     };
   }
 }

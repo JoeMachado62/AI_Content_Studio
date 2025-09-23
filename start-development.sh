@@ -208,13 +208,19 @@ setup_dev_environment() {
     if ! grep -q "PORT=3000" .env.dev.active; then
         echo "PORT=3000" >> .env.dev.active
     fi
-    if ! grep -q "NEXT_PUBLIC_BACKEND_URL.*localhost:3000" .env.dev.active; then
+
+    # Only override URLs if they're not already set to production domains
+    if grep -q "NEXT_PUBLIC_BACKEND_URL.*localhost" .env.dev.active; then
         sed -i 's|NEXT_PUBLIC_BACKEND_URL=.*|NEXT_PUBLIC_BACKEND_URL="http://localhost:3000"|' .env.dev.active
     fi
-    if ! grep -q "BACKEND_INTERNAL_URL.*localhost:3000" .env.dev.active; then
-        sed -i 's|BACKEND_INTERNAL_URL=.*|BACKEND_INTERNAL_URL="http://localhost:3000"|' .env.dev.active
+    if grep -q "BACKEND_INTERNAL_URL.*localhost" .env.dev.active || ! grep -q "BACKEND_INTERNAL_URL" .env.dev.active; then
+        if ! grep -q "BACKEND_INTERNAL_URL" .env.dev.active; then
+            echo 'BACKEND_INTERNAL_URL="http://localhost:3000"' >> .env.dev.active
+        else
+            sed -i 's|BACKEND_INTERNAL_URL=.*|BACKEND_INTERNAL_URL="http://localhost:3000"|' .env.dev.active
+        fi
     fi
-    if ! grep -q "FRONTEND_URL.*localhost:4200" .env.dev.active; then
+    if grep -q "FRONTEND_URL.*localhost" .env.dev.active; then
         sed -i 's|FRONTEND_URL=.*|FRONTEND_URL="http://localhost:4200"|' .env.dev.active
     fi
 }
@@ -369,9 +375,9 @@ case "${1:-start}" in
         setup_dev_environment
 
         # Ensure dependencies are installed
-        log "MAIN" "INFO" "Installing dependencies..."
+        log "MAIN" "INFO" "Installing dependencies (this may take 30-60 seconds)..."
         cd "$SCRIPT_DIR"
-        pnpm install >/dev/null 2>&1
+        pnpm install --reporter=silent
 
         # Start services in order
         start_docker_services || exit 1
@@ -381,7 +387,11 @@ case "${1:-start}" in
         set -a
         source .env.dev.active
         set +a
-        pnpm run prisma-db-push >/dev/null 2>&1
+        pnpm run prisma-db-push --accept-data-loss >/dev/null 2>&1 || {
+            log "MAIN" "ERROR" "Database migration failed. Check your database connection."
+            stop_all_dev_services
+            exit 1
+        }
 
         # Start Node.js services in development mode with real-time logging
         start_dev_service "Backend" "$DEV_BACKEND_PID" "NODE_OPTIONS='--max-old-space-size=4096' pnpm run dev:backend" "BACKEND" &
