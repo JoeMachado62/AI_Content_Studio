@@ -39,7 +39,10 @@ type Inputs = {
 export function Register() {
   const getQuery = useSearchParams();
   const fetch = useFetch();
-  const [provider] = useState(getQuery?.get('provider')?.toUpperCase());
+  const [provider] = useState(
+    getQuery?.get('provider')?.toUpperCase() ||
+    getQuery?.get('state')?.toUpperCase()
+  );
   const [code, setCode] = useState(getQuery?.get('code') || '');
   const [show, setShow] = useState(false);
   useEffect(() => {
