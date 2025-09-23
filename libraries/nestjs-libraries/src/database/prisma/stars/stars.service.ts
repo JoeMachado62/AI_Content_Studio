@@ -386,7 +386,7 @@ export class StarsService {
           client_id: process.env.GITHUB_CLIENT_ID,
           client_secret: process.env.GITHUB_CLIENT_SECRET,
           code,
-          redirect_uri: `${process.env.FRONTEND_URL}/settings`,
+          redirect_uri: `${process.env.FRONTEND_URL}/auth`,
         }),
       })
     ).json();

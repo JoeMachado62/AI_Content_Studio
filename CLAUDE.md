@@ -103,23 +103,46 @@ pnpm run pm2                    # Run with PM2 process manager
 - Stripe for payments
 - OAuth for social login
 
-## Development Notes
+## Production Environment (VPS)
 
-### Local Development
+### Production Setup
+- Deployed on VPS accessible via SSH
 - Use Node.js 20.17.0
-- PostgreSQL and Redis required (use `docker-compose.dev.yaml` for quick setup)
+- PostgreSQL and Redis required
 - Frontend runs on port 4200, backend on port 3000
+- Services managed with PM2
+
+### Production URL
+- **Main application**: https://app.contentgenerator.me
+- **ALWAYS test using the production URL, not localhost**
+- Site is reverse-proxied through NGINX with SSL
+
+### Service Management
+```bash
+pm2 list                        # Check service status
+pm2 logs                        # View all logs
+pm2 restart all                 # Restart all services
+./start-production.sh           # Start all services
+```
+
+### Troubleshooting
+- Check NGINX logs: `sudo tail -f /var/log/nginx/error.log`
+- Check service logs: `pm2 logs [service-name]`
+- Verify ports: `netstat -tulpn | grep -E ":(3000|4200)"`
+- Test site: Visit https://app.contentgenerator.me
 
 ### File Locations
 - Database schema: `libraries/nestjs-libraries/src/database/prisma/schema.prisma`
 - Shared components: `libraries/react-shared-libraries/`
 - API routes: `apps/backend/src/`
 - Frontend pages: `apps/frontend/src/`
+- NGINX config: `/etc/nginx/sites-available/app.contentgenerator.me`
 
 ### Testing
 - Jest configuration in `jest.config.ts`
 - Coverage reports in `reports/` directory
 - Use `jest-junit` for CI integration
+- **Test all functionality at https://app.contentgenerator.me**
 
 ## Useful Resources
 - Main documentation: https://docs.postiz.com/

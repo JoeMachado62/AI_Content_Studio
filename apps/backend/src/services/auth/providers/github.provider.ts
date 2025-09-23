@@ -5,7 +5,7 @@ export class GithubProvider implements ProvidersInterface {
     return `https://github.com/login/oauth/authorize?client_id=${
       process.env.GITHUB_CLIENT_ID
     }&scope=user:email&redirect_uri=${encodeURIComponent(
-      `${process.env.FRONTEND_URL}/settings`
+      `${process.env.FRONTEND_URL}/auth`
     )}`;
   }
 
@@ -21,7 +21,7 @@ export class GithubProvider implements ProvidersInterface {
           client_id: process.env.GITHUB_CLIENT_ID,
           client_secret: process.env.GITHUB_CLIENT_SECRET,
           code,
-          redirect_uri: `${process.env.FRONTEND_URL}/settings`,
+          redirect_uri: `${process.env.FRONTEND_URL}/auth`,
         }),
       })
     ).json();

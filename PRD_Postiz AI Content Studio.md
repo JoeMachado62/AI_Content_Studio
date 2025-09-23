@@ -1,4 +1,181 @@
-PRD — Postiz “AI Content Studio” (API-First, Pluggable Providers)
+here’s a concrete add-on plan that anchors to Postiz-App’s current features, UI, and extension points, and then shows exactly how we bolt your API-first AI Content Studio onto it.
+
+Where Postiz stands today (what we’re building on)
+
+What Postiz already does (core):
+
+Multi-platform social scheduling (Instagram, LinkedIn, X, Reddit, Pinterest, YouTube, TikTok, Bluesky, Mastodon, Discord, etc.). It’s open-source/self-hostable with a hosted option. 
+GitHub
++1
+
+Calendar / composer UX to create and schedule posts, plus basic analytics and team support. 
+Reddit
++1
+
+A Public API for headless operations (file upload + post creation), authenticated with a workspace API key; hosted base URL or your self-hosted backend under /public/v1. 
+Postiz Documentation
++1
+
+Providers configuration: Postiz documents how providers are added/configured, and expects env-driven provider settings. (This is for social networks, but their pattern guides our add-ins.) 
+Postiz Documentation
++1
+
+Deployment expectations: backend reachable on port 3000 in docker-compose topologies. 
+GitHub
+
+Implication: We reuse Postiz auth, teams, calendar/composer, analytics, and the Public API, and augment with AI discovery/generation/stitching that outputs assets back into the existing post creation & scheduling flow.
+
+UX: How we add to the existing UI
+Sidebar
+
+Add a new top-level menu AI Studio with five sub-pages:
+
+Inbox – news sources (Google Alerts via RSS, generic RSS/Atom, Reddit). Shows items, “Summarize”, “Generate ideas”.
+
+Pipelines – visual & JSON editor for multi-step API pipelines (Research → Text → Image/Video Clip → TTS → Stitch → Captions → Publish).
+
+Timeline – lightweight editor (preview + track list) for stitching provider-generated clips/images/audio into a finished video.
+
+Assets – media library filtered to AI outputs (thumbnails, duration, tags), with “Add to Timeline” / “Send to Composer”.
+
+AI Settings – Provider Registry for external APIs (Perplexity, GPT-5, VEO-3, SeaDance, 11Labs, Whisper-as-API, generic Replicate/fal.ai), plus budgets/quotas.
+
+Nothing in the existing Composer/Calendar changes functionally; we just add actions like “Send to Composer” (pre-fill caption + attach media) and “Schedule” (deep-link into Postiz’s normal scheduler). This keeps user muscle memory intact. Postiz already markets AI features and scheduling; we’re slotting into a place users expect to find them. 
+Postiz Documentation
+
+Frontend integration (Next.js)
+
+Routes (e.g., /ai-studio/inbox, /ai-studio/pipelines, …).
+
+Shared UI tokens (brand profiles, workspace selector, team roles) follow Postiz conventions.
+
+Composer handoff: when the user clicks Send to Composer, we navigate to the existing Postiz composer with payload (text, hashtags, attached media) pre-staged. If needed (depending on internal APIs), we stage media first via the Public API upload then open the composer with the file IDs. 
+Postiz Documentation
+
+Calendar handoff: Schedule flows remain Postiz-native so queueing, approvals, and analytics remain unified.
+
+Backend integration (NestJS)
+
+We add three backend modules that live alongside Postiz’s backend:
+
+Provider Registry Service
+
+CRUD for external AI providers (not social posting providers) with encrypted secrets.
+
+Mirrors Postiz’s “providers” idea, but for capabilities: Research, Text, Image, VideoClip, TTS, Captions.
+
+Admin UI sits under AI Settings.
+
+Reference Postiz “create provider” docs for DTO/validation patterns (we’re not touching social providers; just reusing the pattern). 
+Postiz Documentation
+
+Pipeline Engine
+
+Executes a pipeline spec (JSON) as jobs in BullMQ, uses webhooks first (providers that support callbacks), then polling as fallback.
+
+Produces Assets (image/video/audio/captions) by storing provider returns into S3/R2 and registering them in our Assets table.
+
+Render & Stitch Service
+
+CPU-safe Remotion + ffmpeg composition.
+
+Takes clips/audio/overlays and renders final MP4, thumbnails, and optional .srt burn-in.
+
+Outputs are added to Assets and visible on Assets & Timeline pages.
+
+These modules do not replace Postiz’s social providers. They produce media and text that feed into existing publishing (either via the UI or Public API). Providers for AI live in our registry; providers for social posting remain in Postiz’s existing provider system & env config. 
+Postiz Documentation
+
+Publishing: how our outputs reach Postiz posts
+
+Two ways (both supported by Postiz today):
+
+UI path: “Send to Composer” → user edits → schedule normally.
+
+Headless path: use Postiz Public API to upload files then create posts with those file IDs and the caption we generate. Works the same whether hosted or self-hosted (auth via workspace API key; /public/v1). 
+Postiz Documentation
++1
+
+This means approvals, repeats, webhooks, and analytics continue to behave like any Postiz post—no custom infra needed. (Postiz is often deployed with backend on port 3000; we follow that convention so the public API URL remains predictable.) 
+GitHub
+
+“Add, don’t fork” philosophy
+
+No changes to Postiz’s social network providers or auth.
+
+No bypassing the composer/calendar.
+
+We add a vertical (AI Studio) that produces Postiz-native post payloads & media.
+
+This keeps upgrades from upstream Postiz smoother (we’re not fighting their roadmap) and lets your AI Studio remain a module you can maintain independently.
+
+Concretely, what your dev will implement first
+
+AI Settings → Provider Registry
+
+UI forms for: Perplexity, GPT-5, VEO-3 (voiced video), Sea Dance, 11Labs, Whisper-as-API, and a generic HTTP provider (Replicate/fal.ai).
+
+Test connection buttons; save encrypted secrets; choose per-capability priority order (e.g., VideoClip: [VEO3, SeaDance, Replicate-model-X]).
+
+Use Postiz’s provider docs as a reference for settings DTO patterns and validation style. 
+Postiz Documentation
+
+Inbox (Content discovery)
+
+Add Google Alerts (RSS URL), generic RSS/Atom, Reddit subs.
+
+Store items; show list; Summarize via your configured Research + Text providers. (Postiz docs already show an “AI” story in their intro; we’re plugging into that mental model.) 
+Postiz Documentation
+
+Pipelines
+
+Visual builder + JSON view.
+
+Ship the starter template “News-to-Story-Video”:
+Research → Script (Text) → Scene fan-out to (VideoClip + TTS) → Stitch → Captions → Publish.
+
+Timeline + Stitch
+
+Drag generated clips/audio/overlays to tracks; Render (Remotion/ffmpeg).
+
+Result saved to Assets; Send to Composer or Schedule via Public API.
+
+Composer handoff
+
+Implement a function that:
+(a) uploads media via Public API; (b) opens composer prefilled; or (headless) (c) creates scheduled posts via Public API. 
+Postiz Documentation
+
+Why this aligns with Postiz’s architecture & docs
+
+Providers are env-driven & documented—we reuse that mental model for an AI Provider Registry UI + backend config (our own namespace). 
+Postiz Documentation
+
+Public API exists for uploads & posts—we rely on it for clean, upgrade-safe integration. 
+Postiz Documentation
+
+Self-host friendly and Docker-Compose oriented—our services sit next to backend/frontend/redis/postgres, respecting the backend’s port 3000 expectation. 
+Postiz Documentation
++1
+
+Postiz scope (schedule/analytics/teams) stays authoritative; our AI Studio feeds it, not replaces it. 
+Postiz Documentation
+
+Acceptance checks specific to Postiz integration
+
+AC-1: From Inbox, select an RSS item → “Summarize” (Perplexity) → “Generate ideas” (GPT-5) → “Send to Composer” opens the existing Postiz composer with prefilled text + uploaded image asset via Public API. 
+Postiz Documentation
+
+AC-2: From Pipelines, run “News-to-Story-Video” → clips generated by VEO-3, fallback to Sea Dance when VEO-3 intentionally fails (provider order honored).
+
+AC-3: From Timeline, stitch 6 clips + VO, render MP4 on CPU; asset appears in Assets and can be attached to a post in the composer.
+
+AC-4: Publish via Public API into two platforms; posts appear on Postiz calendar/analytics like any other post. 
+Postiz Documentation
+
+AC-5: Upgrade upstream Postiz to a newer tag; AI Studio remains functional (no social provider changes required).
+
+PRD — Postiz Add ON “AI Content Studio” (API-First, Pluggable Providers)
 0) Goals (revised)
 •	No heavy models on our server. All image/video/voice generation happens via third-party APIs.
 •	Pluggable provider registry. Per-workspace configuration of multiple providers per capability (Text, Research, Image, VideoClip, TTS, Captions).
