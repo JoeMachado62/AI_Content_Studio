@@ -3,8 +3,8 @@ import { LaunchesComponent } from '@gitroom/frontend/components/launches/launche
 import { Metadata } from 'next';
 import { isGeneralServerSide } from '@gitroom/helpers/utils/is.general.server.side';
 export const metadata: Metadata = {
-  title: `${isGeneralServerSide() ? 'Postiz Calendar' : 'Gitroom Launches'}`,
-  description: '',
+  title: 'My Content Generator - AI-Powered Content Studio',
+  description: 'Create, schedule, and manage your content with AI-powered tools',
 };
 export default async function Index() {
   return <LaunchesComponent />;

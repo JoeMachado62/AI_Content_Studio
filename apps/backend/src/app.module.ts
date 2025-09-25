@@ -13,11 +13,15 @@ import { ThirdPartyModule } from '@gitroom/nestjs-libraries/3rdparties/thirdpart
 import { VideoModule } from '@gitroom/nestjs-libraries/videos/video.module';
 import { SentryModule } from "@sentry/nestjs/setup";
 import { FILTER } from '@gitroom/nestjs-libraries/sentry/sentry.exception';
+import { AppConfigModule } from './config/config.module';
+import { HealthModule } from './health/health.module';
 
 @Global()
 @Module({
   imports: [
     SentryModule.forRoot(),
+    AppConfigModule,
+    HealthModule,
     BullMqModule,
     DatabaseModule,
     ApiModule,

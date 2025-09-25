@@ -7,8 +7,8 @@ import Link from 'next/link';
 import { getT } from '@gitroom/react/translation/get.translation.service.backend';
 import { LoginWithOidc } from '@gitroom/frontend/components/auth/login.with.oidc';
 export const metadata: Metadata = {
-  title: `${isGeneralServerSide() ? 'Postiz' : 'Gitroom'} Register`,
-  description: '',
+  title: 'Sign Up - My Content Generator',
+  description: 'Join My Content Generator and start creating AI-powered content',
 };
 export default async function Auth(params: {searchParams: {provider: string}}) {
   const t = await getT();

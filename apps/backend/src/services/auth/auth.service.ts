@@ -9,7 +9,7 @@ import { ProvidersFactory } from '@gitroom/backend/services/auth/providers/provi
 import dayjs from 'dayjs';
 import { NotificationService } from '@gitroom/nestjs-libraries/database/prisma/notifications/notification.service';
 import { ForgotReturnPasswordDto } from '@gitroom/nestjs-libraries/dtos/auth/forgot-return.password.dto';
-import { EmailService } from '@gitroom/nestjs-libraries/services/email.service';
+import { EnhancedEmailService } from '@gitroom/nestjs-libraries/services/enhanced-email.service';
 import { NewsletterService } from '@gitroom/nestjs-libraries/newsletter/newsletter.service';
 
 @Injectable()
@@ -18,7 +18,7 @@ export class AuthService {
     private _userService: UsersService,
     private _organizationService: OrganizationService,
     private _notificationService: NotificationService,
-    private _emailService: EmailService
+    private _emailService: EnhancedEmailService
   ) {}
   async canRegister(provider: string) {
     if (process.env.DISABLE_REGISTRATION !== 'true' || provider === Provider.GENERIC) {
@@ -66,11 +66,16 @@ export class AuthService {
             : false;
 
         const obj = { addedOrg, jwt: await this.jwt(create.users[0].user) };
-        await this._emailService.sendEmail(
-          body.email,
-          'Activate your account',
-          `Click <a href="${process.env.FRONTEND_URL}/auth/activate/${obj.jwt}">here</a> to activate your account`
-        );
+
+        // Generate activation code that expires in 24 hours
+        const activationCode = AuthChecker.signJWT({
+          id: create.users[0].user.id,
+          email: create.users[0].user.email,
+          activated: false,
+          expires: dayjs().add(24, 'hours').format('YYYY-MM-DD HH:mm:ss'),
+        });
+
+        await this._emailService.sendActivationEmail(body.email, activationCode);
         return obj;
       }
 
@@ -174,16 +179,13 @@ export class AuthService {
       return false;
     }
 
-    const resetValues = AuthChecker.signJWT({
+    const resetToken = AuthChecker.signJWT({
       id: user.id,
-      expires: dayjs().add(20, 'minutes').format('YYYY-MM-DD HH:mm:ss'),
+      expires: dayjs().add(1, 'hour').format('YYYY-MM-DD HH:mm:ss'),
     });
 
-    await this._notificationService.sendEmail(
-      user.email,
-      'Reset your password',
-      `You have requested to reset your passsord. <br />Click <a href="${process.env.FRONTEND_URL}/auth/forgot/${resetValues}">here</a> to reset your password<br />The link will expire in 20 minutes`
-    );
+    await this._emailService.sendPasswordResetEmail(user.email, resetToken);
+    return true;
   }
 
   forgotReturn(body: ForgotReturnPasswordDto) {
@@ -199,23 +201,38 @@ export class AuthService {
   }
 
   async activate(code: string) {
-    const user = AuthChecker.verifyJWT(code) as {
-      id: string;
-      activated: boolean;
-      email: string;
-    };
-    if (user.id && !user.activated) {
-      const getUserAgain = await this._userService.getUserByEmail(user.email);
-      if (getUserAgain.activated) {
+    try {
+      const user = AuthChecker.verifyJWT(code) as {
+        id: string;
+        activated: boolean;
+        email: string;
+        expires?: string;
+      };
+
+      // Check if activation code is expired
+      if (user.expires && dayjs(user.expires).isBefore(dayjs())) {
         return false;
       }
-      await this._userService.activateUser(user.id);
-      user.activated = true;
-      await NewsletterService.register(user.email);
-      return this.jwt(user as any);
-    }
 
-    return false;
+      if (user.id && !user.activated) {
+        const getUserAgain = await this._userService.getUserByEmail(user.email);
+        if (!getUserAgain) {
+          return false;
+        }
+        if (getUserAgain.activated) {
+          return false;
+        }
+        await this._userService.activateUser(user.id);
+        user.activated = true;
+        await NewsletterService.register(user.email);
+        return this.jwt(getUserAgain);
+      }
+
+      return false;
+    } catch (error) {
+      // Invalid or malformed JWT token
+      return false;
+    }
   }
 
   oauthLink(provider: string, query?: any) {

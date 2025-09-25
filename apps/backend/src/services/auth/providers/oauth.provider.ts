@@ -57,7 +57,7 @@ export class OauthProvider implements ProvidersInterface {
       state: 'GENERIC',
     });
 
-    return `${this.authUrl}/?${params.toString()}`;
+    return `${this.authUrl}?${params.toString()}`;
   }
 
   async getToken(code: string): Promise<string> {
